@@ -23,21 +23,26 @@ class Ping1DClient : public PingClient
 
     protected:
     
-    ros::NodeHandle node_;
-    ros::Publisher  pingPub_;
+    std::shared_ptr<ros::NodeHandle> node_;
+    ros::Publisher                   pingPub_;
 
-    Ping1DClient(const Stream::Ptr& stream) :
-        PingClient(stream)
+    Ping1DClient(std::shared_ptr<ros::NodeHandle> node, const Stream::Ptr& stream) :
+        PingClient(stream),
+        node_(node)
     {
         std::string pingTopic;
-        node_.param<std::string>("ping_topic", pingTopic, "ping");
+        node_->param<std::string>("ping_topic", pingTopic, "ping");
 
-        pingPub_ = node_.advertise<blue_ping1d::Profile>(pingTopic, 100);
+        pingPub_ = node_->advertise<blue_ping1d::Profile>(pingTopic, 100);
     }
 
     public:
     
-    static Ptr Create(const Stream::Ptr& stream) { return Ptr(new Ping1DClient(stream)); }
+    static Ptr Create(std::shared_ptr<ros::NodeHandle> node,
+                      const Stream::Ptr& stream)
+    {
+        return Ptr(new Ping1DClient(node, stream));
+    }
 
     void message_callback(const ping_protocol::Message& msg) override
     {
@@ -56,7 +61,13 @@ int main(int argc, char** argv)
 {
     ros::init(argc, argv, "blue_ping1d");
 
-    auto client = Ping1DClient::Create(Stream::CreateSerial("/dev/narval_ping1d", 115200));
+    auto node = std::make_shared<ros::NodeHandle>("blue_ping1d");
+    std::string device;
+    node->param<std::string>("device", device, "/dev/narval_ping1d");
+    int baudrate;
+    node->param<int>("baudrate", baudrate, 115200);
+
+    auto client = Ping1DClient::Create(node, Stream::CreateSerial(device, baudrate));
     client->send(GeneralRequest(1300));
 
     //while(1) {

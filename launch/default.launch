@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<launch>
+
+    <node name="blue_ping1d" pkg="blue_ping1d" type="blue_ping1d_node"
+          respawn="true" output="screen">
+        <rosparam>
+            ping_topic: "ping"
+            device:     "/dev/narval_ping1d"
+            baudrate:   115200
+        </rosparam>
+    </node>
+</launch>
